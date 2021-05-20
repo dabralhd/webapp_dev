@@ -1,0 +1,536 @@
+openapi: 3.0.0
+info:
+  title: STRED.AI
+  description: API Specification for STRED.AI REST Service
+  version: 0.0.1
+servers:
+- url: https://127.0.0.1:8080/stredai
+paths:
+  /analyze:
+    post:
+      summary: Analyze Input Model
+      description: The 'analyze' command is the primary command to import, to parse,
+        to check and to render an uploaded model. Detailed report provides the main
+        system metrics to know if the generated code can be deployed on a STREDL device.
+        After completion, the user can be fully confident on the imported model in
+        term of supported layer/operators.
+      operationId: analyze
+      parameters:
+      - name: allocate_inputs
+        in: query
+        description: If defined, this flag indicates that the 'activations' buffer
+          will be also used to handle the input buffers else, default behavior, they
+          should be allocated separately in the user memory space. Depending on the
+          size of the input data, the 'activations' buffer may be bigger but overall
+          less than the sum of the activation buffer plus the input buffer.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: allocate_outputs
+        in: query
+        description: If defined, this flag indicates that the 'activations' buffer
+          will be also used to handle the outputs buffers else, default behavior,
+          they should be allocated separately in the user memory space. Depending
+          on the size of the output data, the 'activations' buffer may be bigger but
+          overall less than the sum of the activation buffer plus the output buffer.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: compression
+        in: query
+        description: Indicates the expected global factor of compression which will
+          be applied (default '1'). Compression can be only performed on the dense-type
+          layer.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          enum:
+          - 1
+          - 4
+          - 8
+      - name: name
+        in: query
+        description: indicates the C-name (C-string type) of the imported model. Used
+          to prefix the name of specialized C-files and API functions. Also used for
+          the temporary files, this allows to use the same workspace/output directories
+          for different models (default 'network').
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: split_weights
+        in: query
+        description: If defined, this flag indicates that one C-array is generated
+          by weights/bias data tensor instead to have an unique C-array ('weights'
+          buffer) for the whole.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/body'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIAnalyzeResult'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIError'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIError'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /validate:
+    post:
+      summary: Validate Input Model
+      description: The 'validate' command allows to import, to render and to validate
+        the generated C-files (currently supports only desktop mode).
+      operationId: validate
+      parameters:
+      - name: allocate_inputs
+        in: query
+        description: If defined, this flag indicates that the 'activations' buffer
+          will be also used to handle the input buffers else, default behavior, they
+          should be allocated separately in the user memory space. Depending on the
+          size of the input data, the 'activations' buffer may be bigger but overall
+          less than the sum of the activation buffer plus the input buffer.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: allocate_outputs
+        in: query
+        description: If defined, this flag indicates that the 'activations' buffer
+          will be also used to handle the outputs buffers else, default behavior,
+          they should be allocated separately in the user memory space. Depending
+          on the size of the output data, the 'activations' buffer may be bigger but
+          overall less than the sum of the activation buffer plus the output buffer.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: batches
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+      - name: classifier
+        in: query
+        description: If defined, this flag that the provided model should be considered
+          as a classifier vs regressor. This implies that the computation of the 'CM'
+          and 'ACC' metrics will be evaluated, else an auto-detection mechanism is
+          used to evaluate if the model is a classifier or not.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: compression
+        in: query
+        description: Indicates the expected global factor of compression which will
+          be applied (default '1'). Compression can be only performed on the dense-type
+          layer.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          enum:
+          - 1
+          - 4
+          - 8
+      - name: name
+        in: query
+        description: indicates the C-name (C-string type) of the imported model. Used
+          to prefix the name of specialized C-files and API functions. Also used for
+          the temporary files, this allows to use the same workspace/output directories
+          for different models (default 'network').
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: split_weights
+        in: query
+        description: If defined, this flag indicates that one C-array is generated
+          by weights/bias data tensor instead to have an unique C-array ('weights'
+          buffer) for the whole.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: validate_batch_mode
+        in: query
+        description: when a custom data set input is used, this parameter is used
+          to limit the number of samples. Two modes are available, 'first' to indicate
+          that only the first 'batches' samples are used, 'random' indicates that
+          'batches' samples are randomly selected with a fixed seed.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          enum:
+          - first
+          - random
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/body_1'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIValidateResult'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIError'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIError'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /generate:
+    post:
+      summary: Generate Input Model
+      description: The 'generate' command is used to generate the specialized network
+        and data C-files.
+      operationId: generate
+      parameters:
+      - name: address
+        in: query
+        description: With 'binary' flag, this helper option can be used to indicate
+          the address where the weights will be located to generate a particular '_data.c'
+          file.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: allocate_inputs
+        in: query
+        description: If defined, this flag indicates that the 'activations' buffer
+          will be also used to handle the input buffers else, default behavior, they
+          should be allocated separately in the user memory space. Depending on the
+          size of the input data, the 'activations' buffer may be bigger but overall
+          less than the sum of the activation buffer plus the input buffer.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: allocate_outputs
+        in: query
+        description: If defined, this flag indicates that the 'activations' buffer
+          will be also used to handle the outputs buffers else, default behavior,
+          they should be allocated separately in the user memory space. Depending
+          on the size of the output data, the 'activations' buffer may be bigger but
+          overall less than the sum of the activation buffer plus the output buffer.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: binary
+        in: query
+        description: If defined, this flag forces the generation of a binary file
+          _data.bin instead _data.c and _data.h files. It contains only the weights
+          of the model, C-implementation of the topology is always generated in the
+          .c/.h files.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: compression
+        in: query
+        description: Indicates the expected global factor of compression which will
+          be applied (default '1'). Compression can be only performed on the dense-type
+          layer.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          enum:
+          - 1
+          - 4
+          - 8
+      - name: copy_weights_at
+        in: query
+        description: With 'binary' flag and 'address' option, this helper option can
+          be used to indicate the destination address where the weights should be
+          copied at initialization time thanks to a particular '_data.c' file.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: full_binary_uuid
+        in: query
+        description: If defined and combined with the generate_full_binary parameter
+          set to True, this parameter specifies a unique UUID that is embedded into
+          the generated binary that can be used to track its identity.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          format: uuid
+      - name: generate_fota
+        in: query
+        description: If the 'binary' flag is passed, this additional argument with
+          True value allows to add a specific ST header which is expected for a partial
+          Firmware Over-The-Air (FOTA) process. Name of the generated file is suffixed
+          with the _fota extension _data_fota.bin.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: name
+        in: query
+        description: indicates the C-name (C-string type) of the imported model. Used
+          to prefix the name of specialized C-files and API functions. Also used for
+          the temporary files, this allows to use the same workspace/output directories
+          for different models (default 'network').
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: split_weights
+        in: query
+        description: If defined, this flag indicates that one C-array is generated
+          by weights/bias data tensor instead to have an unique C-array ('weights'
+          buffer) for the whole.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: generate_full_binary
+        in: query
+        description: If defined, this flag requires to generate a full binary (not
+          network weights only). Currently the API supports only OpenMV builds.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      - name: return_full_binary_only
+        in: query
+        description: If defined and combined with the generate_full_binary parameter
+          set to True, this flag tells the service to return a response containing
+          only the generated full binary.
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/body_2'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIGenerateResult'
+            application/octect-stream:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIError'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CubeAIError'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+components:
+  schemas:
+    CubeAIAnalyzeResult:
+      required:
+      - network_c_graph
+      - network_report
+      type: object
+      properties:
+        network_report:
+          type: object
+        network_c_graph:
+          type: object
+      example:
+        network_report: {}
+        network_c_graph: {}
+    CubeAIValidateResult:
+      required:
+      - network_c_graph
+      - network_report
+      type: object
+      properties:
+        network_report:
+          type: object
+        network_c_graph:
+          type: object
+      example:
+        network_report: {}
+        network_c_graph: {}
+    CubeAIGenerateResult:
+      required:
+      - network_c_graph
+      - network_report
+      type: object
+      properties:
+        network_report:
+          type: object
+        network_c_graph:
+          type: object
+        network_c:
+          type: string
+        network_h:
+          type: string
+        data_c:
+          type: string
+        data_h:
+          type: string
+        data_bin:
+          type: string
+        full_binary:
+          type: string
+      example:
+        network_c: network_c
+        network_report: {}
+        data_h: data_h
+        full_binary: full_binary
+        network_h: network_h
+        data_bin: data_bin
+        network_c_graph: {}
+        data_c: data_c
+    CubeAIError:
+      required:
+      - code
+      - message
+      - type
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+    body:
+      required:
+      - deep_learning_model
+      type: object
+      properties:
+        deep_learning_model:
+          type: string
+          description: The model to analyze.
+          format: binary
+        quantize:
+          type: string
+          description: Specify the tensor format configuration file for a Keras model
+            or for the configuration file to perform the Keras post-training quantization
+            process.
+          format: binary
+    body_1:
+      required:
+      - deep_learning_model
+      type: object
+      properties:
+        deep_learning_model:
+          type: string
+          description: The model to analyze.
+          format: binary
+        quantize:
+          type: string
+          description: Specify the tensor format configuration file for a Keras model
+            or for the configuration file to perform the Keras post-training quantization
+            process.
+          format: binary
+        valinput:
+          type: string
+          description: indicates the custom test data set which must be used. If not
+            defined an internal self-generated random dataset is used.
+          format: binary
+        valoutput:
+          type: string
+          description: indicates the expected custom output values. If the data are
+            already provided in a simple file (*.npz) through the valinput parameter,
+            this parameter is skipped.
+          format: binary
+    body_2:
+      required:
+      - deep_learning_model
+      type: object
+      properties:
+        deep_learning_model:
+          type: string
+          description: The model to analyze.
+          format: binary
+        quantize:
+          type: string
+          description: Specify the tensor format configuration file for a Keras model
+            or for the configuration file to perform the Keras post-training quantization
+            process.
+          format: binary
+
