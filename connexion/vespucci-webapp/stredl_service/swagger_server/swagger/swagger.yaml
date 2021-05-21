@@ -5,6 +5,7 @@ info:
   version: 0.0.1
 servers:
 - url: https://127.0.0.1:8080/stredai
+- url: http://127.0.0.1:8080/stredai
 paths:
   /analyze:
     post:

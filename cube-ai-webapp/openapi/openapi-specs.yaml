@@ -1,13 +1,17 @@
 openapi: 3.0.0
 info:
-  description: API Specification for STRED.AI REST Service
-  version: 0.0.1
-  title: STRED.AI
+  description: API Specification for STM32 CUBE.AI REST Service
+  version: 0.1.0
+  title: STM32 CUBE.AI
 paths:
   /analyze:
     post:
       summary: Analyze Input Model
-      description: The 'analyze' command is the primary command to import, to parse, to check and to render an uploaded model. Detailed report provides the main system metrics to know if the generated code can be deployed on a STREDL device. After completion, the user can be fully confident on the imported model in term of supported layer/operators.
+      description: The 'analyze' command is the primary command to import, to parse, to
+        check and to render an uploaded model. Detailed report provides the main
+        system metrics to know if the generated code can be deployed on a STM32
+        device. After completion, the user can be fully confident on the
+        imported model in term of supported layer/operators.
       operationId: analyze
       parameters:
         - in: query
@@ -318,7 +322,8 @@ paths:
           required: false
           description: If the 'binary' flag is passed, this additional argument with True
             value allows to add a specific ST header which is expected for a
-            partial Firmware Over-The-Air (FOTA) process. Name of the generated file is suffixed with the _fota extension _data_fota.bin.
+            partial Firmware Over-The-Air (FOTA) process. Name of the generated
+            file is suffixed with the _fota extension: _data_fota.bin.
           schema:
             type: boolean
         - in: query
@@ -397,8 +402,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CubeAIError"
 servers:
-  - url: https://127.0.0.1:8080/stredai
-  - url: http://127.0.0.1:8080/stredai
+  - url: https://127.0.0.1:8080/cube-ai
+  - url: http://127.0.0.1:8080/cube-ai
 components:
   schemas:
     CubeAIAnalyzeResult:
