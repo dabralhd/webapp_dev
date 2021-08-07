@@ -1,0 +1,282 @@
+openapi: 3.0.0
+info:
+  description: Application manager for sensor, audio, video/cam applications on board and PC
+  version: '1.0.0'
+  title: AppManager
+paths:
+  /create:
+    post:
+      summary: crete a new application instance
+      description: create a app-instance by importing a NN model
+      operationId: create
+      parameters:
+        - in: query
+          name: app_name
+          required: true
+          description: string representing name of demonstration to create
+          schema:
+            type: string
+        - in: query
+          name: user_uuid
+          required: true
+          description: id of the user creating the application
+          schema:
+            type: string
+        - in: query
+          name: app_type
+          required: true
+          description: type of application e.g. sesor, audio, video etc.
+          schema: 
+            $ref: "#/components/schemas/AppType"    
+        - in: query
+          name: app_target
+          required: true
+          description: target on which applicaiton can run e.g. PC, board, both
+          schema: 
+            $ref: "#/components/schemas/AppTarget"    
+        - in: query
+          name: board_name
+          allowEmptyValue: true
+          required: false
+          description: board on which this applicaiton is supported
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                dnn_model_name:
+                  description: DNN model for the demo, required for mapping demo input.
+                  type: string
+                  format: binary
+                app_code:
+                  description: source code for this application, should be in one file only
+                  type: string
+                  format: binary                  
+              required:
+                - app_name
+                - dnn_model_name
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Application"
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppManagerError"
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppManagerError"
+  /setenv:
+    post:
+      summary: set execution environment
+      description: This command sets the execution environment for a given application
+      operationId: setenv
+      parameters:
+        - in: query
+          name: app_uuid
+          required: true
+          description: universal unique id of the demo
+          schema:
+            type: string                              
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetEnvResult"
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetEnvResult"
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetEnvResult"
+  /execute:
+    post:
+      summary: set execution environment and executes a given application
+      description: This command executes a given demo on PC.
+      operationId: retrieve
+      parameters:
+        - in: query
+          name: app_uuid
+          required: true
+          description: universal unique id of the demo
+          schema:
+            type: string   
+        - in: query
+          name: user_uuid
+          required: false
+          description: universal unique id of the user who is retrieving the demo application
+          schema:
+            type: string                              
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppCreationResult"
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppManagerError"
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppManagerError"
+  /retrieve:
+    get:
+      summary: retrieve metadata about an application
+      description: This command retrieves metadata about an application
+      operationId: retrieve
+      parameters:
+        - in: query
+          name: app_uuid
+          required: true
+          description: universal unique id of the demo
+          schema:
+            type: string   
+        - in: query
+          name: user_uuid
+          required: false
+          description: universal unique id of the user who is retrieving the demo application
+          schema:
+            type: string                              
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppCreationResult"
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppManagerError"
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppManagerError"
+
+servers:
+  - url: https://127.0.0.1:8080/appmgr
+  - url: http://127.0.0.1:8080/appmgr  
+components:
+  schemas:
+    Application:      
+      type: object
+      properties:        
+        app_uuid:
+          type: string  
+        app_type:
+          $ref: "#/components/schemas/AppType"  
+        app_input:
+          $ref: "#/components/schemas/AppType"  
+        app_output:
+          $ref: "#/components/schemas/AppOutput"  
+        app_stats:
+          $ref: "#/components/schemas/AppStats"  
+        app_targets:
+          $ref: "#/components/schemas/AppTarget"  
+        app_dnn:        
+          $ref: "#/components/schemas/AppDNN"  
+      required:
+        - app_uuid
+        - app_stats
+    AppCreationResult:
+      type: object
+      properties:
+        app_stats:
+          type: object
+        app_uuid:
+          type: string          
+      required:
+        - app_uuid
+        - app_stats
+    AppManagerError:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+      required:
+        - code
+        - type
+        - message
+    AppType:      
+      type: string         
+      enum:
+      - sensor
+      - audio
+      - camera
+      - video
+    #AppInput:      
+    #  type: "#/components/schemas/AppType"      
+    AppOutput:
+      type: string
+      enum:
+        - boolean
+        - classification
+        - regression   
+    AppTarget:      
+      type: string
+      enum:
+        - PC
+        - Board
+        - All 
+    AppStats:
+      type: object
+      properties:
+        stats:
+          type: object
+    AppDNN:
+      type: object
+      properties:
+        dnn_name: 
+          type: string
+        dnn_uuid: 
+          type: string
+      required:
+        - dnn_name
+        - dnn_uuid
+    SetEnvResult:
+      type: object
+      properties:
+        log_file: 
+          type: string
+      required:
+        - log_file
+
+          
+
+
+             

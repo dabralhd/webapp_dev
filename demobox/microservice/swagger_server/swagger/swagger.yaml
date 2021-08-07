@@ -1,0 +1,323 @@
+openapi: 3.0.0
+info:
+  title: AppManager
+  description: Application manager for sensor, audio, video/cam applications on board
+    and PC
+  version: 1.0.0
+servers:
+- url: https://127.0.0.1:8080/appmgr
+- url: http://127.0.0.1:8080/appmgr
+paths:
+  /create:
+    post:
+      summary: crete a new application instance
+      description: create a app-instance by importing a NN model
+      operationId: create
+      parameters:
+      - name: app_name
+        in: query
+        description: string representing name of demonstration to create
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: user_uuid
+        in: query
+        description: id of the user creating the application
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: app_type
+        in: query
+        description: type of application e.g. sesor, audio, video etc.
+        required: true
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/AppType'
+      - name: app_target
+        in: query
+        description: target on which applicaiton can run e.g. PC, board, both
+        required: true
+        style: form
+        explode: true
+        schema:
+          $ref: '#/components/schemas/AppTarget'
+      - name: board_name
+        in: query
+        description: board on which this applicaiton is supported
+        required: false
+        allowEmptyValue: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/body'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppManagerError'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppManagerError'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /setenv:
+    post:
+      summary: set execution environment
+      description: This command sets the execution environment for a given application
+      operationId: setenv
+      parameters:
+      - name: app_uuid
+        in: query
+        description: universal unique id of the demo
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetEnvResult'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetEnvResult'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetEnvResult'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /execute:
+    post:
+      summary: set execution environment and executes a given application
+      description: This command executes a given demo on PC.
+      operationId: retrieve
+      parameters:
+      - name: app_uuid
+        in: query
+        description: universal unique id of the demo
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: user_uuid
+        in: query
+        description: universal unique id of the user who is retrieving the demo application
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppCreationResult'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppManagerError'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppManagerError'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+  /retrieve:
+    get:
+      summary: retrieve metadata about an application
+      description: This command retrieves metadata about an application
+      operationId: retrieve
+      parameters:
+      - name: app_uuid
+        in: query
+        description: universal unique id of the demo
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: user_uuid
+        in: query
+        description: universal unique id of the user who is retrieving the demo application
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppCreationResult'
+        "400":
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppManagerError'
+        "500":
+          description: INTERNAL SERVER ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppManagerError'
+      x-openapi-router-controller: swagger_server.controllers.default_controller
+components:
+  schemas:
+    Application:
+      required:
+      - app_stats
+      - app_uuid
+      type: object
+      properties:
+        app_uuid:
+          type: string
+        app_type:
+          $ref: '#/components/schemas/AppType'
+        app_input:
+          $ref: '#/components/schemas/AppType'
+        app_output:
+          $ref: '#/components/schemas/AppOutput'
+        app_stats:
+          $ref: '#/components/schemas/AppStats'
+        app_targets:
+          $ref: '#/components/schemas/AppTarget'
+        app_dnn:
+          $ref: '#/components/schemas/AppDNN'
+      example:
+        app_type: sensor
+        app_stats:
+          stats: {}
+        app_dnn:
+          dnn_name: dnn_name
+          dnn_uuid: dnn_uuid
+        app_uuid: app_uuid
+        app_output: boolean
+        app_targets: PC
+        app_input: null
+    AppCreationResult:
+      required:
+      - app_stats
+      - app_uuid
+      type: object
+      properties:
+        app_stats:
+          type: object
+        app_uuid:
+          type: string
+      example:
+        app_stats: {}
+        app_uuid: app_uuid
+    AppManagerError:
+      required:
+      - code
+      - message
+      - type
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+    AppType:
+      type: string
+      enum:
+      - sensor
+      - audio
+      - camera
+      - video
+    AppOutput:
+      type: string
+      enum:
+      - boolean
+      - classification
+      - regression
+    AppTarget:
+      type: string
+      enum:
+      - PC
+      - Board
+      - All
+    AppStats:
+      type: object
+      properties:
+        stats:
+          type: object
+      example:
+        stats: {}
+    AppDNN:
+      required:
+      - dnn_name
+      - dnn_uuid
+      type: object
+      properties:
+        dnn_name:
+          type: string
+        dnn_uuid:
+          type: string
+      example:
+        dnn_name: dnn_name
+        dnn_uuid: dnn_uuid
+    SetEnvResult:
+      required:
+      - log_file
+      type: object
+      properties:
+        log_file:
+          type: string
+      example:
+        log_file: log_file
+    body:
+      required:
+      - app_name
+      - dnn_model_name
+      type: object
+      properties:
+        dnn_model_name:
+          type: string
+          description: DNN model for the demo, required for mapping demo input.
+          format: binary
+        app_code:
+          type: string
+          description: source code for this application, should be in one file only
+          format: binary
+
